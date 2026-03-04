@@ -42,6 +42,53 @@ END
 #enable kill-frecon service
 systemctl enable kill-frecon.service
 
+#build and install a patched systemd compatible with ChromeOS kernels
+patch_systemd() {
+  local patch_url="https://raw.githubusercontent.com/ading2210/chromeos-systemd/main/systemd_unstable.patch"
+  local build_dir="/tmp/systemd-chromeos"
+  local build_user="sysbuild"
+
+  #install build tools and asp (arch source package tool)
+  pacman -S --noconfirm asp base-devel
+
+  #makepkg cannot run as root - create a temporary build user
+  useradd -m -d "$build_dir/home" -s /usr/bin/nologin "$build_user"
+  echo "$build_user ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/$build_user"
+  chmod 0440 "/etc/sudoers.d/$build_user"
+
+  rm -rf "$build_dir"
+  mkdir -p "$build_dir"
+  chown "$build_user" "$build_dir"
+
+  #export the official systemd PKGBUILD
+  su "$build_user" -s /bin/bash -c "cd '$build_dir' && asp export systemd"
+
+  local pkgbuild_dir="$build_dir/systemd"
+  local pkgbuild="$pkgbuild_dir/PKGBUILD"
+
+  #download the chromeos-systemd patch alongside the PKGBUILD
+  wget -q "$patch_url" -O "$pkgbuild_dir/chromeos-systemd.patch"
+  chown "$build_user" "$pkgbuild_dir/chromeos-systemd.patch"
+
+  #inject the chromeos patch application into the prepare() function,
+  #right after the source directory is entered (cd "$pkgbase-stable")
+  sed -i '/^[[:space:]]*cd[[:space:]]*"\$pkgbase-stable"/a\  patch -Np1 -i "\$startdir/chromeos-systemd.patch"' \
+    "$pkgbuild"
+
+  #build and install the patched systemd (skip pgp since we trust the Arch mirrors)
+  su "$build_user" -s /bin/bash -c \
+    "cd '$pkgbuild_dir' && makepkg -si --noconfirm --skippgpcheck"
+
+  #clean up build user and temp files
+  cd /
+  if id "$build_user" &>/dev/null; then
+    userdel -r "$build_user"
+  fi
+  rm -f "/etc/sudoers.d/$build_user"
+  rm -rf "$build_dir"
+}
+patch_systemd
+
 #install desktop and other custom packages
 if echo "$packages" | grep "task-" >/dev/null; then
   desktop="$(echo "$packages" | cut -d'-' -f2)"
