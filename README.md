@@ -1,4 +1,4 @@
-# Chrome OS RMA Shim Bootloader
+# Chrome OS RMA Shim Bootloader (THIS FORK IS MY TRY TO MAKE ARCH LINUX WORK)
 
 Shimboot is a collection of scripts for patching a Chrome OS RMA shim to serve as a bootloader for a standard Linux distribution. It allows you to boot a full desktop Debian install on a Chromebook, without needing to unenroll it or modify the firmware.
 
@@ -25,7 +25,7 @@ Shimboot is a collection of scripts for patching a Chrome OS RMA shim to serve a
 <small><i>Table of contents generated with <a href='http://ecotrust-canada.github.io/markdown-toc/'>markdown-toc</a></i>.</small>
 
 ## Features:
-- Run a full Debian installation on a Chromebook
+- Run a full Debian/arch installation on a Chromebook
 - Does not modify the firmware
 - Works on enterprise enrolled devices
 - Can boot Chrome OS with no restrictions (useful for enrolled devices)
@@ -91,7 +91,7 @@ A possible workaround for audio issues is using a USB sound card. Certain "USB t
 
 ### TODO:
 - Finish Python TUI rewrite (see the `python` branch if you want to help with this)
-- Support for more distros (Ubuntu and Arch maybe)
+- Support for more distros (Ubuntu maybe)
 - Eliminate binwalk dependency
 - Get audio to work on dedede
 - Get kexec working
@@ -153,6 +153,7 @@ Here is a list of distros that are supported out of the box:
 - Debian 13 (Trixie)
 - Debian Unstable (Sid)
 - Alpine Linux
+- Arch Linux
 
 PRs to enable support for other distros are welcome. 
 
@@ -179,7 +180,7 @@ The valid values for this argument are: `gnome`, `xfce`, `kde`, `lxde`, `gnome-f
 #### Will this prevent me from using Chrome OS normally?
 Shimboot does not touch the internal storage at all, so you will be able to use Chrome OS as if nothing happened. However, if you are on an enterprise enrolled device, booting Chrome OS again will force a powerwash due to the attempted switch into developer mode.
 
-#### Can I unplug the USB drive while using Debian?
+#### Can I unplug the USB drive while using Debian/Arch?
 By default, this is not possible. However, you can simply copy your Debian rootfs onto your internal storage by first using `fdisk` to repartition it, using `dd` to copy the partition, and `resize2fs` to have it take up the entire drive. In the future, loading the OS to RAM may be supported, but this isn't a priority at the moment. You can also just blindly copy the contents of your Shimboot USB to the internal storage without bothering to repartition:
 ```bash
 #check the output of this to know what disk you're copying to and from
